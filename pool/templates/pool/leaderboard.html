@@ -1,0 +1,48 @@
+{% extends "pool/base.html" %}    
+{% block content %}
+    <table class="table table-bordered table-dark">
+        <thead>
+            <tr>
+                <th scope="col">Place</th>
+                <th scope="col">Name</th>
+                <th scope="col">Score</th>
+                <th scope="col">Today</th>
+                <th scope="col">Odds To Win</th>
+                <th scope="col">Tier</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for golfer in leaderboard %}                
+        <tr>
+            <th>{{ golfer.place }}</th>
+            <td>{{ golfer.name }}</td>
+            {% if golfer.ttl_score == 0 %}
+                <td>E</td>
+            {% elif golfer.ttl_score == 404 %}
+                <td>WD</td>
+            {% elif golfer.ttl_score == 604 %}
+                <td>CUT</td>
+            {% elif golfer.ttl_score > 0 %}
+                <td>+{{ golfer.ttl_score }}</td>
+            {% else %}
+                <td>{{ golfer.ttl_score }}</td>
+            {% endif %}
+            {% if golfer.today_score == 0 %}
+                <td>E</td>
+            {% elif golfer.today_score == 404 %}
+                <td>WD</td>
+            {% elif golfer.today_score == 504 %}
+                <td>-</td>
+            {% elif golfer.today_score > 0 %}
+                <td>+{{ golfer.today_score }}</td>
+            {% else %}
+                <td>{{ golfer.today_score }}</td>
+            {% endif %}
+            <td>+{{ golfer.odds }}</td>
+            <td>{{ golfer.tier }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    
+{% endblock content %}

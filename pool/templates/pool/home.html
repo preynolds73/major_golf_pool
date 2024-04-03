@@ -1,0 +1,49 @@
+{% extends "pool/base.html" %}    
+{% block content %}
+    <div class="row">
+    {% for team in teams %}
+        <div class="col-4 py-3">
+            <div class="card" style="width: 18rem;">
+                <div class="card-body">
+                    <div style="display: flex">
+    		            <h3 class="card-title" style="margin:0;display:inline;float:left; width: 150px">
+                            {{ team.owner }}
+                        </h3>
+                        <h3 class="{% if team.total_score < 0 %}text-danger{% endif %}" style="margin:10;display:inline;float:right">
+                            {{ team.total_score }}
+                        </h3>
+                    </div>
+                    <div>
+                        {% for golfer in team.golfer.all %}
+                            <p class="card-text" style="display:inline;float:left; width: 150px">
+                                {{ golfer.name }}
+                            </p> 
+                            {% if golfer.ttl_score == 0 %}
+                                <p class="card-text" style="margin:5;display:inline;float:right">
+                                    E
+                                </p>
+                            {% elif golfer.ttl_score == 404 %}
+                                <p class="card-text" style="margin:5;display:inline;float:right">
+                                    WD
+                                </p>
+                            {% elif golfer.ttl_score == 604 %}
+                                <p class="card-text" style="margin:5;display:inline;float:right">
+                                    CUT
+                                </p>
+                            {% elif tgolfer.ttl_score > 0 %}
+                                <p class="card-text" style="margin:5;display:inline;float:right">
+                                    +{{ golfer.ttl_score }}
+                                </p>
+                            {% else %}
+                                <p class="{% if golfer.ttl_score < 0 %}text-danger{% endif %}" style="margin:5;display:inline;float:right">
+                                    {{ golfer.ttl_score }}
+                                </p>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+{% endblock content %}
