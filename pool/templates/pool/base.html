@@ -11,19 +11,16 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 
     <link rel="stylesheet" type="text/css" href="{% static 'pool/main.css' %}">
-
-
-    {% if title %}
-        <title>Django Blog - {{ title }}</title>
-    {% else %}
-        <title>Django Blog</title>
-    {% endif %}
+      <title>Central Florida Golf Pool</title>
 </head>
 <body>
     <header class="site-header">
       <nav class="navbar navbar-expand-md navbar-dark bg-steel fixed-top">
         <div class="container">
-          <a class="navbar-brand mr-4" href="{% url 'pool-home' %}">Django Blog</a>
+          <a class="navbar-brand mr-4" href="#">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOQeHEyS4LsxmtApnVj_qeTMAjySRD_4idM74bd4k3qQ&s" width="30" height="30" class="d-inline-block align-top" alt="">
+          </a>
+          <a class="navbar-brand mr-4" href="{% url 'pool-home' %}">Valero Texas Open</a>
           <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbarToggle" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
           </button>
@@ -31,6 +28,7 @@
             <div class="navbar-nav mr-auto">
 	            <a class="nav-item nav-link" href="{% url 'pool-home' %}">Home</a>
               <a class="nav-item nav-link" href="{% url 'pool-leaderboard' %}">Leaderboard</a>
+              <a class="nav-item nav-link" href="{% url 'pool-odds' %}">Closing Odds</a>
             </div>
             <!-- Navbar Right Side -->
             <div class="navbar-nav">

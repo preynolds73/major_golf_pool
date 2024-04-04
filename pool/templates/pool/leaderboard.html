@@ -7,8 +7,6 @@
                 <th scope="col">Name</th>
                 <th scope="col">Score</th>
                 <th scope="col">Today</th>
-                <th scope="col">Odds To Win</th>
-                <th scope="col">Tier</th>
             </tr>
         </thead>
         <tbody>
@@ -38,8 +36,6 @@
             {% else %}
                 <td>{{ golfer.today_score }}</td>
             {% endif %}
-            <td>+{{ golfer.odds }}</td>
-            <td>{{ golfer.tier }}</td>
         </tr>
         {% endfor %}
         </tbody>

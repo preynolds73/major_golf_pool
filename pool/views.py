@@ -20,7 +20,6 @@ def admin_init(request):
     return render(request, 'pool/admin_init.html', context)
 
 def home(request):
-    print("Home refresh")
     update_teams()
     context = {
         'teams': Team.objects.all().order_by('total_score')
@@ -33,16 +32,20 @@ def leaderboard(request):
     }
     return render(request, 'pool/leaderboard.html', context)
 
+def odds(request):
+    context = {
+        'odds': Golfer.objects.all().order_by('tier')
+    }
+    return render(request, 'pool/odds.html', context)
+
 def update_teams():
     par = 70
-    team_list = ["Parker", "Parke"]
+    team_list = ["Parker", "Daniel", "Logan"]
     for name in team_list:
         sum_total = 0
         teamQuery = Team.objects.filter(owner__exact=name)
-        print(teamQuery)
         team = Team.objects.get(owner__exact=name)
         golfer_names = team.golfer.values_list('name', flat=True)
-        print(golfer_names)
 
         for golfer_name in golfer_names:
             update_golfer = Golfer.objects.get(name__exact=golfer_name)
@@ -50,7 +53,6 @@ def update_teams():
                 sum_total = sum_total + ((update_golfer.r1_score + update_golfer.r2_score)-(par*2))
             else:
                 sum_total = sum_total + update_golfer.ttl_score
-            print(sum_total)
 
         teamQuery.update(total_score=sum_total)
 
@@ -61,36 +63,41 @@ This is just a placeholder
 def create_teams():
 
     if not Team.objects.filter(owner__exact="Parker").exists():
-        t1 = Golfer.objects.get(name__exact="Beau Hossler")
-        t2 = Golfer.objects.get(name__exact="Chad Ramey")
-        t3 = Golfer.objects.get(name__exact="Victor Perez")
-        t4 = Golfer.objects.get(name__exact="Daniel Berger")
+        t1 = Golfer.objects.get(name__exact="Rory McIlroy")
+        t2 = Golfer.objects.get(name__exact="Tom Kim")
+        t3 = Golfer.objects.get(name__exact="Denny McCarthy")
+        t4 = Golfer.objects.get(name__exact="Victor Perez")
         #tot_score = (t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score)
         tot_score = t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score
 
         new_team = Team.objects.create(owner="Parker", 
                                        total_score=tot_score)
-        print(t1.ttl_score)
-        print(t2.ttl_score)
-        print(t3.ttl_score)
-        print(t4.ttl_score)
         new_team.golfer.add(t1,t2,t3,t4)
         new_team.save()
 
-    if not Team.objects.filter(owner__exact="Parke").exists():
-        t1 = Golfer.objects.get(name__exact="Beau Hossler")
-        t2 = Golfer.objects.get(name__exact="Chad Ramey")
-        t3 = Golfer.objects.get(name__exact="Victor Perez")
-        t4 = Golfer.objects.get(name__exact="Doug Ghim")
+    if not Team.objects.filter(owner__exact="Daniel").exists():
+        t1 = Golfer.objects.get(name__exact="Ludvig Aberg")
+        t2 = Golfer.objects.get(name__exact="Collin Morikawa")
+        t3 = Golfer.objects.get(name__exact="Brian Harman")
+        t4 = Golfer.objects.get(name__exact="Maverick McNealy")
         #tot_score = (t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score)
         tot_score = t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score
 
-        new_team = Team.objects.create(owner="Parke", 
+        new_team = Team.objects.create(owner="Daniel", 
                                        total_score=tot_score)
-        print(t1.ttl_score)
-        print(t2.ttl_score)
-        print(t3.ttl_score)
-        print(t4.ttl_score)
+        new_team.golfer.add(t1,t2,t3,t4)
+        new_team.save()
+
+    if not Team.objects.filter(owner__exact="Logan").exists():
+        t1 = Golfer.objects.get(name__exact="Jordan Spieth")
+        t2 = Golfer.objects.get(name__exact="Matt Fitzpatrick")
+        t3 = Golfer.objects.get(name__exact="Collin Morikawa")
+        t4 = Golfer.objects.get(name__exact="Rickie Fowler")
+        #tot_score = (t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score)
+        tot_score = t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score
+
+        new_team = Team.objects.create(owner="Logan", 
+                                       total_score=tot_score)
         new_team.golfer.add(t1,t2,t3,t4)
         new_team.save()
 
@@ -107,17 +114,17 @@ def get_pro_pool():
     espn_data = BeautifulSoup(espn_page.text, 'html.parser')
 
     leaderboard_hdr = []
-    golfer_place = ""
+    golfer_place = "0"
     golfer_name = ""
     golfer_list = []
-    golfer_scores_ttl = ""
-    golfer_scores_tdy = "504"
-    golfer_scores_r1 = ""
-    golfer_scores_r2 = ""
-    golfer_scores_r3 = ""
-    golfer_scores_r4 = ""
+    golfer_scores_ttl = "0"
+    golfer_scores_tdy = "0"
+    golfer_scores_r1 = "0"
+    golfer_scores_r2 = "0"
+    golfer_scores_r3 = "0"
+    golfer_scores_r4 = "0"
     golfer_thru = ""
-    new_golfer = Golfer.objects.create()
+    #new_golfer = Golfer.objects.create()
 
     data_header = espn_data.find_all('tr', attrs={'class':re.compile('Table__TR Table__even')})
     for column in data_header:
@@ -235,7 +242,7 @@ def get_pro_pool():
     Golfer.objects.filter(name="deleteme").delete()
 
 def get_odds(golfer_list):
-    url = "https://sportsbook.draftkings.com/leagues/golf/texas-children's-houston-open"
+    url = "https://sportsbook.draftkings.com/leagues/golf/valero-texas-open"
     page = requests.get(url)
     odds_data = BeautifulSoup(page.text, 'html.parser')
     i = 0
