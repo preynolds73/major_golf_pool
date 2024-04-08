@@ -1,6 +1,6 @@
 {% extends "pool/base.html" %}    
 {% block content %}
-    <table class="table table-bordered table-dark">
+    <table class="table table-bordered">
         <thead>
             <tr>
                 <th scope="col">Tier</th>
@@ -10,12 +10,32 @@
         </thead>
         <tbody>
         {% for golfer in odds %}
-            {% if golfer.tier > 0 %}            
-                <tr>
+            {% if golfer.tier > 0 %}
+                {% if golfer.tier == 1 %}
+                <tr class="table-primary">
                     <th>{{ golfer.tier }}</th>
                     <td>{{ golfer.name }}</td>
                     <td>+{{ golfer.odds }}</td>
                 </tr>
+                {% elif golfer.tier == 2 %}
+                <tr class="table-success">
+                    <th>{{ golfer.tier }}</th>
+                    <td>{{ golfer.name }}</td>
+                    <td>+{{ golfer.odds }}</td>
+                </tr>
+                {% elif golfer.tier == 3 %}
+                <tr class="table-warning">
+                    <th>{{ golfer.tier }}</th>
+                    <td>{{ golfer.name }}</td>
+                    <td>+{{ golfer.odds }}</td>
+                </tr>
+                {% elif golfer.tier == 4 %}
+                <tr class="table-danger">
+                    <th>{{ golfer.tier }}</th>
+                    <td>{{ golfer.name }}</td>
+                    <td>+{{ golfer.odds }}</td>
+                </tr>
+                {% endif %}
             {% endif %}
         {% endfor %}
         </tbody>
