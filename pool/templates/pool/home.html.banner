@@ -1,0 +1,4 @@
+{% extends "pool/base.html" %}    
+{% block content %}
+    <h1>Head over to the Closing Odds tab and choose one golfer from each 'Tier'</h1>
+{% endblock content %}

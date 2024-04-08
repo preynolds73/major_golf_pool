@@ -12,7 +12,7 @@ import unicodedata
 
 @staff_member_required
 def admin_init(request):
-    get_pro_pool()
+    get_pro_pool(admin_init=True)
     create_teams()
     context = {
         'test': "test"
@@ -20,6 +20,7 @@ def admin_init(request):
     return render(request, 'pool/admin_init.html', context)
 
 def home(request):
+    get_pro_pool()
     update_teams()
     context = {
         'teams': Team.objects.all().order_by('total_score')
@@ -39,12 +40,23 @@ def odds(request):
     return render(request, 'pool/odds.html', context)
 
 def update_teams():
-    par = 70
-    team_list = ["Parker", "Daniel", "Logan"]
+    par = 72
+    team_list = ["Parker", "Daniel", "Logan", "Nick"]
+    placeList = []
     for name in team_list:
         sum_total = 0
         teamQuery = Team.objects.filter(owner__exact=name)
         team = Team.objects.get(owner__exact=name)
+        #placeList = Team.objects.get().all().order_by('total_score')
+        placeList = Team.objects.values_list('owner', flat=True).order_by('total_score')
+
+        if placeList[0] == name:
+            teamQuery.update(place=1)
+        if placeList[1] == name:
+            teamQuery.update(place=2)
+        if placeList[2] == name:
+            teamQuery.update(place=3)
+
         golfer_names = team.golfer.values_list('name', flat=True)
 
         for golfer_name in golfer_names:
@@ -101,11 +113,24 @@ def create_teams():
         new_team.golfer.add(t1,t2,t3,t4)
         new_team.save()
 
+    if not Team.objects.filter(owner__exact="Nick").exists():
+        t1 = Golfer.objects.get(name__exact="Dylan Wu")
+        t2 = Golfer.objects.get(name__exact="David Lipsky")
+        t3 = Golfer.objects.get(name__exact="Wilson Furr")
+        t4 = Golfer.objects.get(name__exact="Alex Smalley")
+        #tot_score = (t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score)
+        tot_score = t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score
+
+        new_team = Team.objects.create(owner="Nick", 
+                                       total_score=tot_score)
+        new_team.golfer.add(t1,t2,t3,t4)
+        new_team.save()
+
 
     
     Team.objects.filter(owner="deleteme").delete()
 
-def get_pro_pool():
+def get_pro_pool(admin_init=False):
     espn_url = 'https://www.espn.com/golf/leaderboard'
     user = User.objects.filter(username='preynold').first()
     espn_page = requests.get(espn_url, headers={
@@ -124,7 +149,6 @@ def get_pro_pool():
     golfer_scores_r3 = "0"
     golfer_scores_r4 = "0"
     golfer_thru = ""
-    #new_golfer = Golfer.objects.create()
 
     data_header = espn_data.find_all('tr', attrs={'class':re.compile('Table__TR Table__even')})
     for column in data_header:
@@ -135,7 +159,6 @@ def get_pro_pool():
             leaderboard_hdr = temp_hdr
 
     leaderboard = espn_data.find_all('tr', attrs={'class':re.compile('PlayerRow__Overview PlayerRow__Overview--expandable Table__TR Table__even')})
-    print(leaderboard_hdr)
     for golfers_html in leaderboard:
         golfer_row = [row.get_text() for row in golfers_html.find_all('td')]
         length = len(golfer_row)
@@ -148,7 +171,6 @@ def get_pro_pool():
         Final: ['', 'POS', 'PLAYER', 'SCORE', 'R1', 'R2', 'R3', 'R4', 'TOT', 'EARNINGS', 'FEDEX PTS'
         """
         for i in range(length):
-            print(golfer_row)
             if leaderboard_hdr[i] == "POS":
                 golfer_place = golfer_row[i]
                 golfer_place = golfer_place.replace('T', '')
@@ -184,8 +206,7 @@ def get_pro_pool():
                 elif golfer_scores_ttl == "WD":
                     golfer_scores_ttl = "404"
                 elif golfer_scores_ttl == "CUT":
-                    golfer_scores_ttl = "604"
-                    #golfer_scores_ttl = find_cut_score(golfer_row[i])
+                    golfer_scores_ttl = find_cut_score(golfer_name)
                     update_golfer.update(cut=True)
                 golfer_scores_ttl = int(golfer_scores_ttl)
                 update_golfer.update(ttl_score=golfer_scores_ttl)
@@ -210,10 +231,11 @@ def get_pro_pool():
                 update_golfer.update(today_score=golfer_scores_tdy)
 
             if leaderboard_hdr[i] == "R1":
-                golfer_scores_r1 = golfer_row[i]
-                golfer_scores_r1 = int(golfer_scores_r1)
-                update_golfer = Golfer.objects.filter(name__exact=golfer_name)
-                update_golfer.update(r1_score=golfer_scores_r1)
+                if golfer_row[i] != "--":
+                    golfer_scores_r1 = golfer_row[i]
+                    golfer_scores_r1 = int(golfer_scores_r1)
+                    update_golfer = Golfer.objects.filter(name__exact=golfer_name)
+                    update_golfer.update(r1_score=golfer_scores_r1)
 
             if leaderboard_hdr[i] == "R2":
                 if golfer_row[i] != "--":
@@ -236,13 +258,13 @@ def get_pro_pool():
         if not Golfer.objects.filter(name__exact=golfer_name).exists():
             new_golfer = Golfer.objects.create(name=golfer_name, place=golfer_place, ttl_score=golfer_scores_ttl, thru=golfer_thru, today_score=golfer_scores_tdy)
             new_golfer.save()
-        
-    get_odds(golfer_list)
+    if admin_init == True:    
+        get_odds(golfer_list)
     #Not sure why Django keeps adding a blank entry, but I just delete it every time
     Golfer.objects.filter(name="deleteme").delete()
 
 def get_odds(golfer_list):
-    url = "https://sportsbook.draftkings.com/leagues/golf/valero-texas-open"
+    url = "https://sportsbook.draftkings.com/leagues/golf/us-masters"
     page = requests.get(url)
     odds_data = BeautifulSoup(page.text, 'html.parser')
     i = 0
@@ -289,6 +311,7 @@ def get_odds(golfer_list):
         if new_str:
             new_int = int(new_str)
             if (golferObj.exists()) and (golfer_list[i] in dk_golfer_list):
+            #if (golferObj.exists()):
                 golferObj.update(odds=new_int)
             if k < 11:
                 golferObj.update(tier=1)
@@ -309,3 +332,10 @@ def str_to_neg(string):
         #404/504 = WD/- respectively
         new_int = 504
     return new_int
+
+def find_cut_score(golfer_name):
+    par = 72
+    update_golfer = Golfer.objects.get(name__exact=golfer_name)
+    sum_total = ((update_golfer.r1_score + update_golfer.r2_score)-(par*2))
+    return sum_total
+
