@@ -1,4 +1,19 @@
 {% extends "pool/base.html" %}    
 {% block content %}
-    <h1>Head over to the Closing Odds tab and choose one golfer from each 'Tier'</h1>
+    <h1>Most Popular Picks</h1>
+    <h3>Xander Schauffele: 4</h3>
+    <h3>Sahith Theegala: 3</h3>
+    <h3>Scottie Scheffler: 3</h3>
+    <h3>Rory McIlroy: 3</h3>
+    <h3>Wyndham Clark: 3</h3>
+    
+    <h3>Shane Lowry: 2</h3>
+    <h3>Matt Fitzpatrick: 2</h3>
+    <h3>Will Zalatoris: 2</h3>
+    <h3>Cameron Young: 2</h3>
+    <h3>Si Woo Kim: 2</h3>
+    <h3>: 2</h3>
+    <h3>: 2</h3>
+    <h3>: 2</h3>
+    <h3>: 2</h3>
 {% endblock content %}
