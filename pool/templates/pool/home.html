@@ -1,7 +1,8 @@
 {% extends "pool/base.html" %}    
 {% block content %}
-    <div class="row">
+    <div class="row" id="scoreboard">
     {% for team in teams %}
+    
         <div class="col-sm-4"> 
             <div>
                 <table class="table table-borderless">
@@ -21,25 +22,25 @@
         </div>
     {% endfor %}
     </div>
-    <div class="row">
+    <div class="row" id="team-card">
     {% for team in teams %}
         <div class="col-sm-4">
             <div class="card" style="width: 23rem;">
                 <div class="card-body">
                     <div style="display: flex">
-    		            <h3 class="card-title" style="margin:0;display:inline;float:left; width: 150px">
+    		            <h3 class="card-title" style="margin:0;display:inline;float:left; width: 150px" >
                             {{ team.owner }}
                         </h3>
                         {% if team.total_score > 0 %}
-                            <h3 class="card-title" style="margin:10;display:inline;float:right">
+                            <h3 class="card-title" style="margin:10;display:inline;float:right" id="{{team.owner}}">
                                 +{{ team.total_score }}
                             </h3>
                         {% elif team.total_score == 0 %}
-                            <h3 class="card-title" style="margin:10;display:inline;float:right">
+                            <h3 class="card-title" style="margin:10;display:inline;float:right" id="{{team.owner}}">
                                 E
                             </h3>
                         {% else %}
-                            <h3 class="{% if team.total_score < 0 %}text-danger{% endif %}" style="margin:10;display:inline;float:right">
+                            <h3 class="{% if team.total_score < 0 %}text-danger{% endif %}" style="margin:10;display:inline;float:right" id="{{team.owner}}">
                                 {{ team.total_score }}
                             </h3>
                         {% endif %}
@@ -59,23 +60,23 @@
                                         </td>
                                     {% endif %}
                                     {% if golfer.ttl_score == 0 %}
-                                        <td>
+                                        <td id="{{golfer.name}}">
                                             E
                                         </td>
                                     {% elif golfer.ttl_score == 404 %}
-                                        <td>
+                                        <td id="{{golfer.name}}">
                                             WD
                                         </td>
                                     {% elif golfer.ttl_score == 604 %}
-                                        <td>
+                                        <td id="{{golfer.name}}">
                                             CUT
                                         </td>
                                     {% elif golfer.ttl_score > 0 %}
-                                        <td>
+                                        <td id="{{golfer.name}}">
                                             +{{ golfer.ttl_score }}
                                         </td>
                                     {% else %}
-                                        <td class="{% if golfer.ttl_score < 0 %}text-danger{% endif %}">
+                                        <td class="{% if golfer.ttl_score < 0 %}text-danger{% endif %}" id="{{golfer.name}}">
                                             {{ golfer.ttl_score }}
                                         </td>
                                     {% endif %}
@@ -91,5 +92,80 @@
             </div>
         </div>
     {% endfor %}
+    <script type="text/javascript">
+        // function newScore(tableId, rowId, colNum, newValue)
+        // {
+        //     $('#'+tableId).find('tr#'+rowId).find('td:eq(colNum)').html(newValue);
+        // };
+        function loadDoc(url, xFunction) {
+          const xhttp=new XMLHttpRequest();
+          xhttp.responseType = 'json'
+          xhttp.onload = function() {xFunction(this);}
+          xhttp.open("GET", url);
+          xhttp.send();
+        }
+
+        function myFunction(xhttp) {
+            var resonse = xhttp.response;
+            $.each(resonse, function(i, ownerObj) {
+              console.log(ownerObj);  
+              $.each(ownerObj, function(j, ownerVal){
+                if (ownerVal.total_score > 0){
+                    document.getElementById(`${ownerVal.owner}`).innerHTML = ownerVal.total_score
+                    document.getElementById(`${ownerVal.owner}`).style.color = 'black'
+                } else if (ownerVal.total_score < 0){
+                    document.getElementById(`${ownerVal.owner}`).innerHTML = ownerVal.total_score
+                    document.getElementById(`${ownerVal.owner}`).style.color = 'red'
+                } else {
+                    document.getElementById(`${ownerVal.owner}`).innerHTML = "E"
+                    document.getElementById(`${ownerVal.owner}`).style.color = 'black'
+                }
+                if (ownerVal.tier1_score > 0){
+                    document.getElementById(`${ownerVal.tier1_golfer}`).innerHTML = ownerVal.tier1_score
+                    document.getElementById(`${ownerVal.tier1_golfer}`).style.color = 'black'
+                } else if (ownerVal.tier1_score < 0){
+                    document.getElementById(`${ownerVal.tier1_golfer}`).innerHTML = ownerVal.tier1_score
+                    document.getElementById(`${ownerVal.tier1_golfer}`).style.color = 'red'
+                } else {
+                    document.getElementById(`${ownerVal.tier1_golfer}`).innerHTML = "E"
+                    document.getElementById(`${ownerVal.tier1_golfer}`).style.color = 'black'
+                }
+                if (ownerVal.tier2_score > 0){
+                    document.getElementById(`${ownerVal.tier2_golfer}`).innerHTML = ownerVal.tier2_score
+                    document.getElementById(`${ownerVal.tier2_golfer}`).style.color = 'black'
+                } else if (ownerVal.tier2_score < 0){
+                    document.getElementById(`${ownerVal.tier2_golfer}`).innerHTML = ownerVal.tier2_score
+                    document.getElementById(`${ownerVal.tier2_golfer}`).style.color = 'red'
+                } else {
+                    document.getElementById(`${ownerVal.tier2_golfer}`).innerHTML = "E"
+                    document.getElementById(`${ownerVal.tier2_golfer}`).style.color = 'black'
+                }
+                if (ownerVal.tier3_score > 0){
+                    document.getElementById(`${ownerVal.tier3_golfer}`).innerHTML = ownerVal.tier3_score
+                    document.getElementById(`${ownerVal.tier3_golfer}`).style.color = 'black'
+                } else if (ownerVal.tier3_score < 0){
+                    document.getElementById(`${ownerVal.tier3_golfer}`).innerHTML = ownerVal.tier3_score
+                    document.getElementById(`${ownerVal.tier3_golfer}`).style.color = 'red'
+                } else {
+                    document.getElementById(`${ownerVal.tier3_golfer}`).innerHTML = "E"
+                    document.getElementById(`${ownerVal.tier3_golfer}`).style.color = 'black'
+                }
+                if (ownerVal.tier4_score > 0){
+                    document.getElementById(`${ownerVal.tier4_golfer}`).innerHTML = ownerVal.tier4_score
+                    document.getElementById(`${ownerVal.tier4_golfer}`).style.color = 'black'
+                } else if (ownerVal.tier4_score < 0){
+                    document.getElementById(`${ownerVal.tier4_golfer}`).innerHTML = ownerVal.tier4_score
+                    document.getElementById(`${ownerVal.tier4_golfer}`).style.color = 'red'
+                } else {
+                    document.getElementById(`${ownerVal.tier4_golfer}`).innerHTML = "E"
+                    document.getElementById(`${ownerVal.tier4_golfer}`).style.color = 'black'
+                }
+              });
+            });
+        }
+        var intervalId = setInterval(function(){
+            loadDoc('home',myFunction);
+        }, 5000)
+    </script>
     </div>
 {% endblock content %}

@@ -1,7 +1,11 @@
 from django.shortcuts import render
+import csv
+import os
+from django.core import serializers
 from django.views.generic import ListView
 from django.contrib.auth.models import User
 from django.contrib.admin.views.decorators import staff_member_required
+from django.http import HttpResponseBadRequest, JsonResponse
 from pool.models import Team, Golfer
 from unidecode import unidecode
 import re
@@ -9,23 +13,89 @@ import requests
 from bs4 import BeautifulSoup
 import unicodedata
 
-
 @staff_member_required
 def admin_init(request):
     get_pro_pool(admin_init=True)
+    # get_pro_pool()
     create_teams()
     context = {
         'test': "test"
     }
     return render(request, 'pool/admin_init.html', context)
 
-def home(request):
-    get_pro_pool()
-    update_teams()
+def index(request):
     context = {
-        'teams': Team.objects.all().order_by('total_score')
+        'teams': Team.objects.all()
     }
     return render(request, 'pool/home.html', context)
+
+def home(request):
+    # is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    data = []
+    tier1_golfer = ""
+    tier2_golfer = ""
+    tier3_golfer = ""
+    tier4_golfer = ""
+    tier1_score = 0
+    tier2_score = 0
+    tier3_score = 0
+    tier4_score = 0
+    if request.method == 'GET':
+        #get_pro_pool()
+        update_teams()
+        owner_list = get_owner_list("owners")
+        for name in owner_list:
+            team = Team.objects.get(owner__exact=name)
+            golfer_names = team.golfer.values_list('name', flat=True)
+            for golfer_name in golfer_names:
+                temp_golfer = Golfer.objects.get(name__exact=golfer_name)
+                print(temp_golfer.name)
+                if temp_golfer.tier == 1:
+                    tier1_golfer = temp_golfer.name
+                    tier1_score = temp_golfer.ttl_score
+                elif temp_golfer.tier == 2:
+                    tier2_golfer = temp_golfer.name
+                    tier2_score = temp_golfer.ttl_score
+                elif temp_golfer.tier == 3:
+                    tier3_golfer = temp_golfer.name
+                    tier3_score = temp_golfer.ttl_score
+                elif temp_golfer.tier == 4:
+                    tier4_golfer = temp_golfer.name
+                    tier4_score = temp_golfer.ttl_score
+                else:
+                    print("Error")
+            team_data = {
+                'owner': name,
+                'place': team.place,
+                'total_score': team.total_score,
+                'tier1_golfer': tier1_golfer,
+                'tier1_score': tier1_score,
+                'tier2_golfer': tier2_golfer,
+                'tier2_score': tier2_score,
+                'tier3_golfer': tier3_golfer,
+                'tier3_score': tier3_score,
+                'tier4_golfer': tier4_golfer,
+                'tier4_score': tier4_score,
+            }
+            data.append(team_data)
+
+        # teams = list(Team.objects.all().values())
+        # serial_teams = serializers.serialize('json', teams)
+        # golfers = list(Golfer.objects.all().values())
+        return JsonResponse({'teams': data})
+    return JsonResponse({'status': 'Invalid request'}, status=400)
+    
+    
+    # context = {
+    #     'teams': Team.objects.all()
+    # }
+    # return render(request, 'pool/home.html', context)
+
+#class TeamListView(ListView):
+#    model = Team
+#    template_name = 'pool/home.html'
+#    context_object_name = 'teams'
+#    ordering = ['total_score']
 
 def leaderboard(request):
     context = {
@@ -40,8 +110,9 @@ def odds(request):
     return render(request, 'pool/odds.html', context)
 
 def update_teams():
+    print("test")
     par = 72
-    team_list = ["Parker", "Daniel", "Logan", "Nick"]
+    team_list = get_owner_list("owners")
     placeList = []
     for name in team_list:
         sum_total = 0
@@ -64,9 +135,11 @@ def update_teams():
             if update_golfer.ttl_score == 604 or update_golfer.ttl_score == 404:
                 sum_total = sum_total + ((update_golfer.r1_score + update_golfer.r2_score)-(par*2))
             else:
+                print(golfer_name + " " + str(update_golfer.ttl_score))
                 sum_total = sum_total + update_golfer.ttl_score
 
         teamQuery.update(total_score=sum_total)
+        print(team.total_score)
 
 """
 TODO: Make the teams selectable. 
@@ -74,61 +147,53 @@ This is just a placeholder
 """
 def create_teams():
 
-    if not Team.objects.filter(owner__exact="Parker").exists():
-        t1 = Golfer.objects.get(name__exact="Rory McIlroy")
-        t2 = Golfer.objects.get(name__exact="Tom Kim")
-        t3 = Golfer.objects.get(name__exact="Denny McCarthy")
-        t4 = Golfer.objects.get(name__exact="Victor Perez")
-        #tot_score = (t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score)
-        tot_score = t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score
+    team_list = get_owner_list("owners")
+    for team in team_list:
+        temp_t1,temp_t2,temp_t3,temp_t4 = get_owner_list("get_team", team)
+        if not Team.objects.filter(owner__exact=team).exists():
+            t1 = Golfer.objects.get(name__exact=temp_t1)
+            t2 = Golfer.objects.get(name__exact=temp_t2)
+            t3 = Golfer.objects.get(name__exact=temp_t3)
+            t4 = Golfer.objects.get(name__exact=temp_t4)
+            #tot_score = (t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score)
+            tot_score = t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score
 
-        new_team = Team.objects.create(owner="Parker", 
-                                       total_score=tot_score)
-        new_team.golfer.add(t1,t2,t3,t4)
-        new_team.save()
+            new_team = Team.objects.create(owner=team, 
+                                           total_score=tot_score)
+            new_team.golfer.add(t1,t2,t3,t4)
+            new_team.save()
 
-    if not Team.objects.filter(owner__exact="Daniel").exists():
-        t1 = Golfer.objects.get(name__exact="Ludvig Aberg")
-        t2 = Golfer.objects.get(name__exact="Collin Morikawa")
-        t3 = Golfer.objects.get(name__exact="Brian Harman")
-        t4 = Golfer.objects.get(name__exact="Maverick McNealy")
-        #tot_score = (t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score)
-        tot_score = t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score
-
-        new_team = Team.objects.create(owner="Daniel", 
-                                       total_score=tot_score)
-        new_team.golfer.add(t1,t2,t3,t4)
-        new_team.save()
-
-    if not Team.objects.filter(owner__exact="Logan").exists():
-        t1 = Golfer.objects.get(name__exact="Jordan Spieth")
-        t2 = Golfer.objects.get(name__exact="Matt Fitzpatrick")
-        t3 = Golfer.objects.get(name__exact="Collin Morikawa")
-        t4 = Golfer.objects.get(name__exact="Rickie Fowler")
-        #tot_score = (t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score)
-        tot_score = t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score
-
-        new_team = Team.objects.create(owner="Logan", 
-                                       total_score=tot_score)
-        new_team.golfer.add(t1,t2,t3,t4)
-        new_team.save()
-
-    if not Team.objects.filter(owner__exact="Nick").exists():
-        t1 = Golfer.objects.get(name__exact="Dylan Wu")
-        t2 = Golfer.objects.get(name__exact="David Lipsky")
-        t3 = Golfer.objects.get(name__exact="Wilson Furr")
-        t4 = Golfer.objects.get(name__exact="Alex Smalley")
-        #tot_score = (t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score)
-        tot_score = t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score
-
-        new_team = Team.objects.create(owner="Nick", 
-                                       total_score=tot_score)
-        new_team.golfer.add(t1,t2,t3,t4)
-        new_team.save()
-
-
-    
     Team.objects.filter(owner="deleteme").delete()
+
+    # if not Team.objects.filter(owner__exact="Boobs").exists():
+    #     t1 = Golfer.objects.get(name__exact="Xander Schauffele")
+    #     t2 = Golfer.objects.get(name__exact="Tommy Fleetwood")
+    #     t3 = Golfer.objects.get(name__exact="Shane Lowry")
+    #     t4 = Golfer.objects.get(name__exact="Denny McCarthy")
+    #     #tot_score = (t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score)
+    #     tot_score = t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score
+
+    #     new_team = Team.objects.create(owner="Boobs", 
+    #                                    total_score=tot_score)
+    #     new_team.golfer.add(t1,t2,t3,t4)
+    #     new_team.save()
+
+    # Team.objects.filter(owner="deleteme").delete()
+
+    # if not Team.objects.filter(owner__exact="Jimbo").exists():
+    #     t1 = Golfer.objects.get(name__exact="Xander Schauffele")
+    #     t2 = Golfer.objects.get(name__exact="Tommy Fleetwood")
+    #     t3 = Golfer.objects.get(name__exact="Shane Lowry")
+    #     t4 = Golfer.objects.get(name__exact="Denny McCarthy")
+    #     #tot_score = (t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score)
+    #     tot_score = t1.ttl_score + t2.ttl_score + t3.ttl_score + t4.ttl_score
+
+    #     new_team = Team.objects.create(owner="Jimbo", 
+    #                                    total_score=tot_score)
+    #     new_team.golfer.add(t1,t2,t3,t4)
+    #     new_team.save()
+
+    # Team.objects.filter(owner="deleteme").delete()
 
 def get_pro_pool(admin_init=False):
     espn_url = 'https://www.espn.com/golf/leaderboard'
@@ -207,6 +272,7 @@ def get_pro_pool(admin_init=False):
                     golfer_scores_ttl = "404"
                 elif golfer_scores_ttl == "CUT":
                     golfer_scores_ttl = find_cut_score(golfer_name)
+                    # golfer_scores_ttl = 11
                     update_golfer.update(cut=True)
                 golfer_scores_ttl = int(golfer_scores_ttl)
                 update_golfer.update(ttl_score=golfer_scores_ttl)
@@ -264,7 +330,7 @@ def get_pro_pool(admin_init=False):
     Golfer.objects.filter(name="deleteme").delete()
 
 def get_odds(golfer_list):
-    url = "https://sportsbook.draftkings.com/leagues/golf/us-masters"
+    url = "https://sportsbook.draftkings.com/leagues/golf/fedex-st.-jude-championship"
     page = requests.get(url)
     odds_data = BeautifulSoup(page.text, 'html.parser')
     i = 0
@@ -310,7 +376,7 @@ def get_odds(golfer_list):
             new_str = str_to_neg(new_str)
         if new_str:
             new_int = int(new_str)
-            if (golferObj.exists()) and (golfer_list[i] in dk_golfer_list):
+            if (golferObj.exists()):
             #if (golferObj.exists()):
                 golferObj.update(odds=new_int)
             if k < 11:
@@ -321,6 +387,10 @@ def get_odds(golfer_list):
                 golferObj.update(tier=3)
             else:
                 golferObj.update(tier=4)
+            print("dk golfer: " + dk_golfer_list[i])
+            print(new_int)
+            print("golfer: " + golfer_list[i])
+            print(k)
         k += 1
 
 def str_to_neg(string):
@@ -339,3 +409,37 @@ def find_cut_score(golfer_name):
     sum_total = ((update_golfer.r1_score + update_golfer.r2_score)-(par*2))
     return sum_total
 
+def get_owner_list(option, owner=""):
+    path = "/home/preynold/gitProjects/major_golf_pool/pool/"
+    filename = path + "GolfPoolSelections.csv"
+    header = []
+    rows = []
+    owner_list = []
+    print (os.getcwd())
+
+    with open(filename, 'r') as csvfile:
+        csvreader = csv.reader(csvfile)
+
+        header = next(csvreader)
+
+        for row in csvreader:
+            rows.append(row)
+    if option == "get_team":
+        for row in rows:
+            if row[1] == owner:
+                owner_list.append(row[1])
+                tier1 = row[2].split("+")[0]
+                tier1 = tier1.strip()
+                tier2 = row[3].split("+")[0]
+                tier2 = tier2.strip()
+                tier3 = row[4].split("+")[0]
+                tier3 = tier3.strip()
+                tier4 = row[5].split("+")[0]
+                tier4 = tier4.strip()
+                return tier1, tier2, tier3, tier4
+
+        return owner_list
+    elif option == "owners":
+        for row in rows:
+            owner_list.append(row[1])
+        return owner_list
