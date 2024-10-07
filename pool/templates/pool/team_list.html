@@ -1,0 +1,96 @@
+{% extends "pool/base.html" %}    
+{% block content %}
+    <div class="row">
+    {% for team in teams %}
+    
+        <div class="col-sm-4"> 
+            <div>
+                <table class="table table-borderless">
+                    <tbody>
+                        <tr>
+                        {% if team.place == 1 %}
+                            <td class="text-warning">1. {{ team.owner }}</td>
+                        {% elif team.place == 2 %}
+                            <td class="text-secondary">2. {{ team.owner }}</td>
+                        {% elif team.place == 3 %}
+                            <td>3. {{ team.owner }}</td>
+                        {% endif %}
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+    <div class="row">
+    {% for team in teams %}
+        <div class="col-sm-4">
+            <div class="card" style="width: 23rem;">
+                <div class="card-body">
+                    <div style="display: flex">
+    		            <h3 class="card-title" style="margin:0;display:inline;float:left; width: 150px">
+                            {{ team.owner }}
+                        </h3>
+                        {% if team.total_score > 0 %}
+                            <h3 class="card-title" style="margin:10;display:inline;float:right">
+                                +{{ team.total_score }}
+                            </h3>
+                        {% elif team.total_score == 0 %}
+                            <h3 class="card-title" style="margin:10;display:inline;float:right">
+                                E
+                            </h3>
+                        {% else %}
+                            <h3 class="{% if team.total_score < 0 %}text-danger{% endif %}" style="margin:10;display:inline;float:right">
+                                {{ team.total_score }}
+                            </h3>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <table class="table table-borderless">
+                            <tbody>
+                            {% for golfer in team.golfer.all %}
+                                <tr>
+                                    {% if golfer.cut == True %}
+                                        <td>
+                                            <del>{{ golfer.name }}</del>
+                                        </td> 
+                                    {% else %}
+                                        <td>
+                                            {{ golfer.name }}
+                                        </td>
+                                    {% endif %}
+                                    {% if golfer.ttl_score == 0 %}
+                                        <td>
+                                            E
+                                        </td>
+                                    {% elif golfer.ttl_score == 404 %}
+                                        <td>
+                                            WD
+                                        </td>
+                                    {% elif golfer.ttl_score == 604 %}
+                                        <td>
+                                            CUT
+                                        </td>
+                                    {% elif golfer.ttl_score > 0 %}
+                                        <td>
+                                            +{{ golfer.ttl_score }}
+                                        </td>
+                                    {% else %}
+                                        <td class="{% if golfer.ttl_score < 0 %}text-danger{% endif %}">
+                                            {{ golfer.ttl_score }}
+                                        </td>
+                                    {% endif %}
+                                    <td>
+                                        {{ golfer.thru }}
+                                    </td>
+                                </tr>    
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+{% endblock content %}

@@ -324,13 +324,13 @@ def get_pro_pool(admin_init=False):
         if not Golfer.objects.filter(name__exact=golfer_name).exists():
             new_golfer = Golfer.objects.create(name=golfer_name, place=golfer_place, ttl_score=golfer_scores_ttl, thru=golfer_thru, today_score=golfer_scores_tdy)
             new_golfer.save()
-    if admin_init == True:    
+    if admin_init == True and len(golfer_list) > 0:    
         get_odds(golfer_list)
     #Not sure why Django keeps adding a blank entry, but I just delete it every time
     Golfer.objects.filter(name="deleteme").delete()
 
 def get_odds(golfer_list):
-    url = "https://sportsbook.draftkings.com/leagues/golf/fedex-st.-jude-championship"
+    url = os.environ.get("ODDS_URL")
     page = requests.get(url)
     odds_data = BeautifulSoup(page.text, 'html.parser')
     i = 0
@@ -410,7 +410,7 @@ def find_cut_score(golfer_name):
     return sum_total
 
 def get_owner_list(option, owner=""):
-    path = "/home/preynold/gitProjects/major_golf_pool/pool/"
+    path = os.environ.get("CSV_PATH", "/home/")
     filename = path + "GolfPoolSelections.csv"
     header = []
     rows = []
